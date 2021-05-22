@@ -7,7 +7,11 @@ Three example scripts are provided for how to use Seq2Seq-DU. train.sh will trai
 
 ## Requirements
 1.absl-py (for tests)
+
 2.fuzzywuzzy
+
 3.numpy
+
 4.six
+
 5.tensorflow
