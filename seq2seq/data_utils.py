@@ -453,8 +453,6 @@ class InputExample(object):
 
     # Number of categorical slots present in the service.
     self.num_categorical_slots = 0
-    # The num of active categorical slot in the service.
-    # self.num_active_categorical_slot = 0
     # Number of values taken by each categorical slot. contain 0 dontcare
     self.num_categorical_slot_values = [0] * dataset_config.max_num_cat_slot
     # The index of the correct value for active categorical slot. [slot_id, value_id, <sep>,...]
@@ -463,24 +461,7 @@ class InputExample(object):
 
     # Number of non-categorical slots present in the service.
     self.num_noncategorical_slots = 0
-    # The num of active non-categorical slot in the service.
-    # self.num_active_noncategorical_slot = 0
-    # The index of the subword corresponding to the slot span for a
-    # non-categorical slot value. [slot_id, start_id, end_id, <sep>,...]
-    # 0 0 dontcare
-    # self.noncategorical_slot_values = [0] * dataset_config.max_num_noncat_slot * 4
-    # The index of the ending (inclusive) subword corresponding to the slot span
-    # for a non-categorical slot value.
-    # self.noncategorical_slot_value_end = [0
-    #                                      ] * dataset_config.max_num_noncat_slot
-
-    # Total number of slots present in the service. All slots are included here
-    # since every slot can be requested.
-    # self.num_slots = 0
-    # Takes value 1 if the corresponding slot is requested, 0 otherwise.
-    # self.requested_slot_status = [STATUS_OFF] * (
-    #     dataset_config.max_num_cat_slot + dataset_config.max_num_noncat_slot)
-
+    
     # Total number of intents present in the service.
     self.num_intents = 0
     # active intent index [id, <sep>]
@@ -820,32 +801,15 @@ def file_based_convert_examples_to_features(dial_examples, dataset_config,
     features["utt_mask"] = _create_int_feature(ex.utterance_mask)
 
     features["cat_slot_num"] = _create_int_feature([ex.num_categorical_slots])
-    # features["cat_slot_status"] = _create_int_feature(
-    #     ex.categorical_slot_status)
     features["cat_slot_value_num"] = _create_int_feature(
         ex.num_categorical_slot_values)
-    # features["cat_slot_value"] = _create_int_feature(ex.categorical_slot_values)
-    # features["num_active_categorical_slot"] = _create_int_feature([ex.num_active_categorical_slot])
-
+    
     features["noncat_slot_num"] = _create_int_feature([ex.num_noncategorical_slots])
-    # features["num_active_noncategorical_slot"] = _create_int_feature([ex.num_active_noncategorical_slot])
-    # features["noncategorical_slot_values"] = _create_int_feature(ex.noncategorical_slot_values)
-    # features["noncat_slot_status"] = _create_int_feature(
-    #     ex.noncategorical_slot_status)
-    # features["noncat_slot_value_start"] = _create_int_feature(
-    #     ex.noncategorical_slot_value_start)
-    # features["noncat_slot_value_end"] = _create_int_feature(
-    #     ex.noncategorical_slot_value_end)
     features["noncat_alignment_start"] = _create_int_feature(ex.start_char_idx)
     features["noncat_alignment_end"] = _create_int_feature(ex.end_char_idx)
 
-    # features["req_slot_num"] = _create_int_feature([ex.num_slots])
-    # features["req_slot_status"] = _create_int_feature(ex.requested_slot_status)
-
     features["intent_num"] = _create_int_feature([ex.num_intents])
-    # features["active_intent"] = _create_int_feature(ex.active_intent)
-    # features["intent_status"] = _create_int_feature(ex.intent_status)
-
+    
     features["output"] = _create_int_feature(ex.output)
     features["dec_output_len"] = _create_int_feature([ex.dec_output_len])
 

@@ -546,16 +546,11 @@ class SchemaGuidedDST(object):
     # shape(batch_size, max_seq_len, emb_dim)
     schema_aware_dialogue_attention = self.get_dialogue_attention(self._encoded_tokens, schema_embedding)
     # shape(batch_size, max_seq_len, 2*emb_dim)
-    # schema_aware_dialogue_embedding = tf.concat([self._encoded_tokens, schema_aware_dialogue_attention], axis=-1)
-    # shape(batch_size,
-    # max_num_noncat_slots + max_num_cat_slots + max_num_intents + max_num_cat_slots * max_num_values,
-    # emb_dim)
     dialogue_aware_schema_attention = self.get_schema_attention(schema_embedding, self._encoded_tokens)
     # shape(batch_size,
     # max_num_noncat_slots + max_num_cat_slots + max_num_intents + max_num_cat_slots * max_num_values,
     # 2*emb_dim)
-    # dialogue_aware_schema_embedding = tf.concat([schema_embedding, dialogue_aware_schema_attention], axis=-1)
-
+    
     # add <sep>, <end>
     decode_special_token_embedding = tf.slice(special_token_embedding, [2, 0], [2, embedding_dim])
     # decode_special_token_embedding = tf.tile(decode_special_token_embedding, [1, 2])
@@ -565,20 +560,7 @@ class SchemaGuidedDST(object):
         [decode_special_token_embedding_reshape, schema_aware_dialogue_attention, dialogue_aware_schema_attention],
         axis=1)
 
-    # PointerWrapper
-    # shape
-    # (batch_size,
-    # max_seq_len + max_num_noncat_slots + max_num_cat_slots + max_num_intents + max_num_cat_slots * max_num_values,
-    # 2*embedding_dim)
-    # memory = tf.concat([schema_aware_dialogue_embedding, dialogue_aware_schema_embedding], axis=1)
-    # add <sep>, <end>
-    # decode_special_token_embedding = tf.slice(special_token_embedding, [2, 0], [2, embedding_dim])
-    # decode_special_token_embedding_reshape = tf.tile(tf.expand_dims(decode_special_token_embedding, axis=0), [batch_size, 1, 1])
-    # shape
-    # (batch_size,
-    # 2 + max_seq_len + max_num_noncat_slots + max_num_cat_slots + max_num_intents + max_num_cat_slots * max_num_values,
-    # embedding_dim)
-    # memory = tf.concat([decode_special_token_embedding_reshape, memory], axis=1)
+    
     if not is_training:
       # Tile encoder_outiuts
       schema_aware_dialogue_attention = tf.contrib.seq2seq.tile_batch(schema_aware_dialogue_attention, FLAGS.beam_width)
@@ -656,120 +638,11 @@ class SchemaGuidedDST(object):
         self.predicted_ids = tf.transpose(predicted_ids, [0, 2, 1])
         final_outputs["predicted_ids"] = self.predicted_ids
 
-    # outputs = {}
-    # outputs["logit_output_seq"] = self._get_intents(features)
-    # outputs["logit_req_slot_status"] = self._get_requested_slots(features)
-    # cat_slot_status, cat_slot_value = self._get_categorical_slot_goals(features)
-    # outputs["logit_cat_slot_status"] = cat_slot_status
-    # outputs["logit_cat_slot_value"] = cat_slot_value
-    # noncat_slot_status, noncat_span_start, noncat_span_end = (
-    #     self._get_noncategorical_slot_goals(features))
-    # outputs["logit_noncat_slot_status"] = noncat_slot_status
-    # outputs["logit_noncat_slot_start"] = noncat_span_start
-    # outputs["logit_noncat_slot_end"] = noncat_span_end
     return final_outputs
 
   def define_loss(self, features, outputs):
     """Obtain the loss of the model."""
-    # # Intents.
-    # # Shape: (batch_size, max_num_intents + 1).
-    # intent_logits = outputs["logit_intent_status"]
-    # # Shape: (batch_size, max_num_intents).
-    # intent_labels = features["intent_status"]
-    # # Add label corresponding to NONE intent.
-    # num_active_intents = tf.expand_dims(
-    #     tf.reduce_sum(intent_labels, axis=1), axis=1)
-    # none_intent_label = tf.ones_like(num_active_intents) - num_active_intents
-    # # Shape: (batch_size, max_num_intents + 1).
-    # onehot_intent_labels = tf.concat([none_intent_label, intent_labels], axis=1)
-    # intent_loss = tf.losses.softmax_cross_entropy(
-    #     onehot_intent_labels,
-    #     intent_logits,
-    #     weights=features["is_real_example"])
-
-    # # Requested slots.
-    # # Shape: (batch_size, max_num_slots).
-    # requested_slot_logits = outputs["logit_req_slot_status"]
-    # requested_slot_labels = features["req_slot_status"]
-    # max_num_requested_slots = requested_slot_labels.get_shape().as_list()[-1]
-    # weights = tf.sequence_mask(
-    #     features["req_slot_num"], maxlen=max_num_requested_slots)
-    # # Sigmoid cross entropy is used because more than one slots can be requested
-    # # in a single utterance.
-    # requested_slot_loss = tf.losses.sigmoid_cross_entropy(
-    #     requested_slot_labels, requested_slot_logits, weights=weights)
-
-    # # Categorical slot status.
-    # # Shape: (batch_size, max_num_cat_slots, 3).
-    # cat_slot_status_logits = outputs["logit_cat_slot_status"]
-    # cat_slot_status_labels = features["cat_slot_status"]
-    # max_num_cat_slots = cat_slot_status_labels.get_shape().as_list()[-1]
-    # one_hot_labels = tf.one_hot(cat_slot_status_labels, 3, dtype=tf.int32)
-    # cat_weights = tf.sequence_mask(
-    #     features["cat_slot_num"], maxlen=max_num_cat_slots, dtype=tf.float32)
-    # cat_slot_status_loss = tf.losses.softmax_cross_entropy(
-    #     tf.reshape(one_hot_labels, [-1, 3]),
-    #     tf.reshape(cat_slot_status_logits, [-1, 3]),
-    #     weights=tf.reshape(cat_weights, [-1]))
-
-    # # Categorical slot values.
-    # # Shape: (batch_size, max_num_cat_slots, max_num_slot_values).
-    # cat_slot_value_logits = outputs["logit_cat_slot_value"]
-    # cat_slot_value_labels = features["cat_slot_value"]
-    # max_num_slot_values = cat_slot_value_logits.get_shape().as_list()[-1]
-    # one_hot_labels = tf.one_hot(
-    #     cat_slot_value_labels, max_num_slot_values, dtype=tf.int32)
-    # # Zero out losses for categorical slot value when the slot status is not
-    # # active.
-    # cat_loss_weight = tf.cast(
-    #     tf.equal(cat_slot_status_labels, data_utils.STATUS_ACTIVE), tf.float32)
-    # cat_slot_value_loss = tf.losses.softmax_cross_entropy(
-    #     tf.reshape(one_hot_labels, [-1, max_num_slot_values]),
-    #     tf.reshape(cat_slot_value_logits, [-1, max_num_slot_values]),
-    #     weights=tf.reshape(cat_weights * cat_loss_weight, [-1]))
-
-    # # Non-categorical slot status.
-    # # Shape: (batch_size, max_num_noncat_slots, 3).
-    # noncat_slot_status_logits = outputs["logit_noncat_slot_status"]
-    # noncat_slot_status_labels = features["noncat_slot_status"]
-    # max_num_noncat_slots = noncat_slot_status_labels.get_shape().as_list()[-1]
-    # one_hot_labels = tf.one_hot(noncat_slot_status_labels, 3, dtype=tf.int32)
-    # noncat_weights = tf.sequence_mask(
-    #     features["noncat_slot_num"],
-    #     maxlen=max_num_noncat_slots,
-    #     dtype=tf.float32)
-    # # Logits for padded (invalid) values are already masked.
-    # noncat_slot_status_loss = tf.losses.softmax_cross_entropy(
-    #     tf.reshape(one_hot_labels, [-1, 3]),
-    #     tf.reshape(noncat_slot_status_logits, [-1, 3]),
-    #     weights=tf.reshape(noncat_weights, [-1]))
-
-    # # Non-categorical slot spans.
-    # # Shape: (batch_size, max_num_noncat_slots, max_num_tokens).
-    # span_start_logits = outputs["logit_noncat_slot_start"]
-    # span_start_labels = features["noncat_slot_value_start"]
-    # max_num_tokens = span_start_logits.get_shape().as_list()[-1]
-    # onehot_start_labels = tf.one_hot(
-    #     span_start_labels, max_num_tokens, dtype=tf.int32)
-    # # Shape: (batch_size, max_num_noncat_slots, max_num_tokens).
-    # span_end_logits = outputs["logit_noncat_slot_end"]
-    # span_end_labels = features["noncat_slot_value_end"]
-    # onehot_end_labels = tf.one_hot(
-    #     span_end_labels, max_num_tokens, dtype=tf.int32)
-    # # Zero out losses for non-categorical slot spans when the slot status is not
-    # # active.
-    # noncat_loss_weight = tf.cast(
-    #     tf.equal(noncat_slot_status_labels, data_utils.STATUS_ACTIVE),
-    #     tf.float32)
-    # span_start_loss = tf.losses.softmax_cross_entropy(
-    #     tf.reshape(onehot_start_labels, [-1, max_num_tokens]),
-    #     tf.reshape(span_start_logits, [-1, max_num_tokens]),
-    #     weights=tf.reshape(noncat_weights * noncat_loss_weight, [-1]))
-    # span_end_loss = tf.losses.softmax_cross_entropy(
-    #     tf.reshape(onehot_end_labels, [-1, max_num_tokens]),
-    #     tf.reshape(span_end_logits, [-1, max_num_tokens]),
-    #     weights=tf.reshape(noncat_weights * noncat_loss_weight, [-1]))
-
+    
     # Subtract target values by 2
     # because prediction output ranges from 0 to max_input_sequence_len+1
     # while target values are from 0 to max_input_sequence_len + 3
@@ -782,13 +655,6 @@ class SchemaGuidedDST(object):
     loss = tf.reduce_sum(losses * tf.cast(self.dec_output_mask, tf.float32)) / FLAGS.train_batch_size
 
     losses = {
-        # "intent_loss": intent_loss,
-        # "requested_slot_loss": requested_slot_loss,
-        # "cat_slot_status_loss": cat_slot_status_loss,
-        # "cat_slot_value_loss": cat_slot_value_loss,
-        # "noncat_slot_status_loss": noncat_slot_status_loss,
-        # "span_start_loss": span_start_loss,
-        # "span_end_loss": span_end_loss,
         "total_loss": loss,
     }
     for loss_name, loss in losses.items():
@@ -802,49 +668,6 @@ class SchemaGuidedDST(object):
         "service_id": features["service_id"],
         "is_real_example": features["is_real_example"],
     }
-    # Scores are output for each intent.
-    # Note that the intent indices are shifted by 1 to account for NONE intent.
-    # predictions["intent_status"] = tf.argmax(
-    #     outputs["logit_intent_status"], axis=-1)
-
-    # Scores are output for each requested slot.
-    # predictions["req_slot_status"] = tf.sigmoid(
-    #     outputs["logit_req_slot_status"])
-
-    # For categorical slots, the status of each slot and the predicted value are
-    # output.
-    # predictions["cat_slot_status"] = tf.argmax(
-    #     outputs["logit_cat_slot_status"], axis=-1)
-    # predictions["cat_slot_value"] = tf.argmax(
-    #     outputs["logit_cat_slot_value"], axis=-1)
-
-    # For non-categorical slots, the status of each slot and the indices for
-    # spans are output.
-    # predictions["noncat_slot_status"] = tf.argmax(
-    #     outputs["logit_noncat_slot_status"], axis=-1)
-    # start_scores = tf.nn.softmax(outputs["logit_noncat_slot_start"], axis=-1)
-    # end_scores = tf.nn.softmax(outputs["logit_noncat_slot_end"], axis=-1)
-    # _, max_num_slots, max_num_tokens = end_scores.get_shape().as_list()
-    # batch_size = tf.shape(end_scores)[0]
-    # Find the span with the maximum sum of scores for start and end indices.
-    # total_scores = (
-    #     tf.expand_dims(start_scores, axis=3) +
-    #     tf.expand_dims(end_scores, axis=2))
-    # Mask out scores where start_index > end_index.
-    # start_idx = tf.reshape(tf.range(max_num_tokens), [1, 1, -1, 1])
-    # end_idx = tf.reshape(tf.range(max_num_tokens), [1, 1, 1, -1])
-    # invalid_index_mask = tf.tile((start_idx > end_idx),
-    #                              [batch_size, max_num_slots, 1, 1])
-    # total_scores = tf.where(invalid_index_mask, tf.zeros_like(total_scores),
-    #                         total_scores)
-    # max_span_index = tf.argmax(
-    #     tf.reshape(total_scores, [-1, max_num_slots, max_num_tokens**2]),
-    #     axis=-1)
-    # span_start_index = tf.floordiv(max_span_index, max_num_tokens)
-    # span_end_index = tf.floormod(max_span_index, max_num_tokens)
-    # predictions["noncat_slot_start"] = span_start_index
-    # predictions["noncat_slot_end"] = span_end_index
-    # Add inverse alignments.
     predictions["noncat_alignment_start"] = features["noncat_alignment_start"]
     predictions["noncat_alignment_end"] = features["noncat_alignment_end"]
 
@@ -1098,15 +921,7 @@ def _model_fn_builder(bert_config, init_checkpoint, learning_rate,
           "total_loss": total_loss,
       }
       
-      # output_spec = tf.contrib.tpu.TPUEstimatorSpec(
-      #     mode=mode,
-      #     loss=total_loss,
-      #     train_op=train_op,
-      #     scaffold_fn=scaffold_fn,
-      #     training_hooks=[
-      #         tf.train.LoggingTensorHook(logged_tensors, every_n_iter=5)
-      #     ])
-
+      
       output_spec = tf.estimator.EstimatorSpec(
           mode=mode,
           loss=total_loss,
@@ -1252,18 +1067,7 @@ def main(_):
       train_distribute=mirrored_strategy)
 
   is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
-  # run_config = tf.contrib.tpu.RunConfig(
-  #     cluster=tpu_cluster_resolver,
-  #     master=FLAGS.master,
-  #     model_dir=model_output_dir_with_para,
-  #     save_checkpoints_steps=FLAGS.save_checkpoints_steps,
-  #     keep_checkpoint_max=None,
-  #     tpu_config=tf.contrib.tpu.TPUConfig(
-  #         # Recommended value is number of global steps for next checkpoint.
-  #         iterations_per_loop=FLAGS.save_checkpoints_steps,
-  #         num_shards=FLAGS.num_tpu_cores,
-  #         per_host_input_for_training=is_per_host))
-
+  
   num_train_steps = None
   num_warmup_steps = None
   if FLAGS.run_mode == "train":
@@ -1282,16 +1086,7 @@ def main(_):
       use_tpu=FLAGS.use_tpu,
       use_one_hot_embeddings=FLAGS.use_tpu)
 
-  # If TPU is not available, this will fall back to normal Estimator on CPU
-  # or GPU.
-  # estimator = tf.contrib.tpu.TPUEstimator(
-  #     use_tpu=FLAGS.use_tpu,
-  #     model_fn=model_fn,
-  #     config=run_config,
-  #     train_batch_size=FLAGS.train_batch_size,
-  #     eval_batch_size=FLAGS.eval_batch_size,
-  #     predict_batch_size=FLAGS.predict_batch_size)
-
+  
   estimator = tf.estimator.Estimator(
       model_fn=model_fn,
       config=run_config)

@@ -43,18 +43,6 @@ DATASET_CONFIG = {
             max_num_noncat_slot=11,
             max_num_value_per_cat_slot=12,
             max_num_intent=5),
-    "multiwoz21_all":
-        DatasetConfig(
-            file_ranges={
-                "train": range(1, 18),
-                "dev": range(1, 3),
-                "test": range(1, 3)
-            },
-            max_seq_length=256,
-            max_num_cat_slot=9,
-            max_num_noncat_slot=4,
-            max_num_value_per_cat_slot=47,
-            max_num_intent=1),
     "multiwoz22_all":
         DatasetConfig(
             file_ranges={
